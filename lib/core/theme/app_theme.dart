@@ -26,6 +26,14 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF475569);
   static const Color textMuted = Color(0xFF94A3B8);
 
+  // Legacy & Compatibility Palette
+  static const Color darkBackground = Color(0xFF0F172A);
+  static const Color darkSurface = Color(0xFF1E293B);
+  static const Color darkCard = Color(0xFFFFFFFF);
+  static const Color darkBorder = Color(0xFFE2E8F0);
+  static const Color reoptIndigo = Color(0xFF4F46E5);
+  static const Color violationDarkRed = Color(0xFFB91C1C);
+
   static ThemeData get uberLightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -52,7 +60,7 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: pureBlack),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceCard,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.06),

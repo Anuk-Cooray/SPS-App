@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/models/parking_destination.dart';
 import '../../../core/theme/app_theme.dart';
-import '../services/reservation_service.dart';
 import 'bay_selection_screen.dart';
 
 class ReservationHomeScreen extends StatefulWidget {
@@ -15,7 +12,6 @@ class ReservationHomeScreen extends StatefulWidget {
 }
 
 class _ReservationHomeScreenState extends State<ReservationHomeScreen> {
-  final ReservationService _reservationService = ReservationService();
   late final MapController _mapController;
 
   bool _isSatellite = false;
