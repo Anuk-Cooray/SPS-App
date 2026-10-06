@@ -22,7 +22,7 @@ The codebase is partitioned according to the approved SLIIT IT4010 Research Char
 
 | Member Name | Student ID | Sub-Objective & Novelty | Assigned Directory |
 | :--- | :--- | :--- | :--- |
-| **Cooray T.C.M.G.A.I** (*Leader*) | `IT23328020` | **Dynamic Slot Re-optimization & Reservation Model**<br>• 15-minute auto-cancellation TTL engine<br>• 10-minute pre-arrival AI upgrade rerouting algorithm<br>• Dynamic booking and upgrade acceptance workflow | `lib/features/reservation/` |
+| **Cooray T.C.M.G.A.I** | `IT23328020` | **Dynamic Slot Re-optimization & Reservation Model**<br>• 15-minute auto-cancellation TTL engine<br>• 10-minute pre-arrival AI upgrade rerouting algorithm<br>• Dynamic booking and upgrade acceptance workflow | `lib/features/reservation/` |
 | **R.M.M.K.S Rathnayake** | `IT23333666` | **Hybrid Payment Analytics & Automated Billing Model**<br>• Dynamic fee calculation engine (duration + peak factor)<br>• Single-use time-sensitive QR code generator for exit<br>• Mobile self-payment & guard-assisted booth checkout | `lib/features/payment_billing/` |
 | **G.V.K Samudi** | `IT23343498` | **Vision-Based Occupancy & Violation Detection Model**<br>• CCTV video stream occupancy monitoring<br>• Fine-tuned YOLO detection for local vehicles (tuk-tuks, cars)<br>• Multi-slot improper parking violation alert dispatch | `lib/features/occupancy_vision/` |
 | **R. Varunprasath** | `IT23347526` | **IoT-Driven Physical Slot Protection & Authentication**<br>• ESP32 smart bollard/barrier actuation (Raise/Lower)<br>• QR-based entry gate verification<br>• "Find My Car" automatic location saver & reverse navigation | `lib/features/iot_navigation/` |
