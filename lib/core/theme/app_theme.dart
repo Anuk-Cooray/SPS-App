@@ -1,64 +1,83 @@
 import 'package:flutter/material.dart';
 
+/// Uber-style Clean Design System for Smart Parking System (SPS)
 class AppTheme {
-  // Modern Smart City / Automotive Color Palette
-  static const Color darkBackground = Color(0xFF0B0F19);
-  static const Color darkSurface = Color(0xFF161F30);
-  static const Color darkCard = Color(0xFF1E293B);
-  static const Color darkBorder = Color(0xFF334155);
+  // Monochrome Primary Palette
+  static const Color pureBlack = Color(0xFF000000);
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  static const Color backgroundLight = Color(0xFFF8FAFC);
+  static const Color surfaceCard = Color(0xFFFFFFFF);
+  static const Color mapAsphalt = Color(0xFFF1F5F9);
+  static const Color mapLane = Color(0xFFE2E8F0);
+  static const Color borderSubtle = Color(0xFFE2E8F0);
 
-  // Status Colors
+  // Status & Brand Accents
   static const Color availableGreen = Color(0xFF10B981);
+  static const Color availableGreenBg = Color(0xFFECFDF5);
   static const Color reservedAmber = Color(0xFFF59E0B);
+  static const Color reservedAmberBg = Color(0xFFFFFBEB);
   static const Color occupiedRed = Color(0xFFEF4444);
-  static const Color reoptIndigo = Color(0xFF6366F1);
-  static const Color violationDarkRed = Color(0xFFB91C1C);
+  static const Color occupiedRedBg = Color(0xFFFEF2F2);
+  static const Color aiIndigo = Color(0xFF4F46E5);
+  static const Color aiIndigoBg = Color(0xFFEEF2FF);
 
-  // Text Colors
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  // Typography Palette
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF475569);
+  static const Color textMuted = Color(0xFF94A3B8);
 
-  static ThemeData get darkTheme {
+  static ThemeData get uberLightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: darkBackground,
-      colorScheme: const ColorScheme.dark(
-        primary: reoptIndigo,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: backgroundLight,
+      colorScheme: const ColorScheme.light(
+        primary: pureBlack,
         secondary: availableGreen,
-        surface: darkSurface,
+        surface: surfaceCard,
         error: occupiedRed,
-        onPrimary: Colors.white,
+        onPrimary: pureWhite,
         onSurface: textPrimary,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: darkSurface,
+        backgroundColor: pureWhite,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.2,
         ),
-        iconTheme: IconThemeData(color: textPrimary),
+        iconTheme: IconThemeData(color: pureBlack),
       ),
       cardTheme: CardTheme(
-        color: darkCard,
+        color: surfaceCard,
         elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.06),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: darkBorder, width: 1),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: borderSubtle, width: 1),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: pureBlack,
+          foregroundColor: pureWhite,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.2),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: darkSurface,
-        selectedItemColor: reoptIndigo,
+        backgroundColor: pureWhite,
+        selectedItemColor: pureBlack,
         unselectedItemColor: textMuted,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        elevation: 12,
+        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
         unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
       ),
     );

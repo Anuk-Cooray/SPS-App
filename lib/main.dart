@@ -4,6 +4,7 @@ import 'features/reservation/screens/reservation_home_screen.dart';
 import 'features/occupancy_vision/screens/occupancy_vision_screen.dart';
 import 'features/payment_billing/screens/payment_billing_screen.dart';
 import 'features/iot_navigation/screens/iot_navigation_screen.dart';
+import 'shared_widgets/uber_bottom_navigation_bar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,9 +17,9 @@ class SmartParkingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Smart Parking SPS (J26-IT-335)',
+      title: 'SPS Smart Parking (J26-IT-335)',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.uberLightTheme,
       home: const MainNavigationShell(),
     );
   }
@@ -34,50 +35,24 @@ class MainNavigationShell extends StatefulWidget {
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentIndex = 0;
 
-  // The 4 research components individually led by team members
   final List<Widget> _screens = const [
-    ReservationHomeScreen(),   // Cooray: Dynamic Reservation & Re-optimization
-    OccupancyVisionScreen(),   // Samudi: CCTV YOLO Detection & Violations
-    PaymentBillingScreen(),    // Rathnayake: Dynamic Billing & QR Pass
-    IotNavigationScreen(),     // Varunprasath: IoT Barrier & Find My Car
+    ReservationHomeScreen(),   // Explore: Working Uber Search, Colombo & SLIIT Malabe Map (Cooray)
+    PaymentBillingScreen(),    // Bookings: Dynamic QR Billing & Pass (Rathnayake)
+    OccupancyVisionScreen(),   // Vision AI: CCTV YOLO Detection & Violations (Samudi)
+    IotNavigationScreen(),     // Account: IoT Barrier & Find My Car (Varunprasath)
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: false,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: UberBottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_parking_rounded),
-            activeIcon: Icon(Icons.local_parking_rounded, color: AppTheme.reoptIndigo),
-            label: 'Reserve',
-            tooltip: 'Dynamic Slot Reservation (Cooray)',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.remove_red_eye_outlined),
-            activeIcon: Icon(Icons.remove_red_eye_rounded, color: AppTheme.reoptIndigo),
-            label: 'CCTV Vision',
-            tooltip: 'Occupancy & Violations (Samudi)',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_scanner_rounded),
-            activeIcon: Icon(Icons.qr_code_2_rounded, color: AppTheme.reoptIndigo),
-            label: 'Billing & QR',
-            tooltip: 'Dynamic QR Billing (Rathnayake)',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sensors_rounded),
-            activeIcon: Icon(Icons.sensors_rounded, color: AppTheme.reoptIndigo),
-            label: 'IoT & Car',
-            tooltip: 'Physical Protection & Find My Car (Varunprasath)',
-          ),
-        ],
+        onTabSelected: (index) => setState(() => _currentIndex = index),
       ),
     );
   }
