@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPS Parking Finder - High-Fidelity Design</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Clean mobility fonts, custom scrollbars, and animations */
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 4px; }
+    .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .tile-img { transition: opacity 0.2s ease-in; }
+    .map-grabbable { cursor: grab; }
+    .map-grabbable:active { cursor: grabbing; }
+    .dotted-route {
+      stroke-dasharray: 4, 6;
+      animation: dashMove 30s linear infinite;
+    }
+    @keyframes dashMove {
+      to { stroke-dashoffset: -1000; }
+    }
+  </style>
+</head>
+<body class="bg-transparent text-slate-900 antialiased p-2 md:p-6 font-sans">
+  
+  <div class="max-w-5xl mx-auto bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden">
+    
+    <!-- Top Research Info Bar -->
+    <div class="px-6 py-3 bg-slate-950 text-white flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="px-2.5 py-0.5 text-xs font-black bg-white text-black rounded tracking-wider">SLIIT IT4010</span>
+        <div>
+          <span class="text-xs font-bold text-white">AI Vision-Based Smart Parking System (J26-IT-335)</span>
+          <span class="text-xs text-slate-400 block">Exact Reference UI Match with Live GIS Map & Route Tracking</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Exact Reference Match
+        </span>
+      </div>
+    </div>
+
+    <!-- Simulator Layout: Phone Device + Testing Controls -->
+    <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start bg-slate-100">
+      
+      <!-- Phone Mockup Container (Cols 1-7) -->
+      <div class="lg:col-span-7 flex justify-center">
+        <div class="w-full max-w-[410px] bg-white text-slate-900 rounded-[50px] border-[8px] border-slate-900 shadow-2xl overflow-hidden flex flex-col h-[820px] relative select-none">
+          
+          <!-- Phone Status Bar -->
+          <div class="px-7 pt-3 pb-1 flex justify-between items-center text-xs text-slate-800 bg-white/90 backdrop-blur-md z-30">
+            <span class="font-bold text-sm" id="clock-display">09:41</span>
+            <div class="w-24 h-4 bg-slate-900 rounded-full mx-auto"></div>
+            <div class="flex items-center gap-1.5 text-slate-700">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25A10.93 10.93 0 0 1 1 12C1 5.92 5.92 1 12 1s11 4.92 11 11c0 2.28-.7 4.41-1.9 6.18l-.62-.62A9.97 9.97 0 0 0 21 12c0-4.97-4.03-9-9-9z"/></svg>
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg>
+            </div>
+          </div>
+
+          <!-- TOP FLOATING BAR (Exact Match to Reference Image) -->
+          <div class="absolute top-10 left-3.5 right-3.5 z-30 space-y-2">
+            
+            <!-- 1. Search Bar with Black Search Circle, 2-Line Destination, Filter & Bell -->
+            <div class="bg-white rounded-full shadow-xl border border-slate-200/90 px-3 py-2 flex items-center justify-between gap-2">
+              
+              <!-- Round Black Search Icon Button -->
+              <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0 shadow-md">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+              </div>
+
+              <!-- Two-Line Destination Text (Clickable to switch destinations) -->
+              <div class="flex-1 cursor-pointer" onclick="toggleSearchDropdown()">
+                <div class="text-[11px] text-slate-400 font-semibold leading-tight">Where to park?</div>
+                <div class="text-xs font-black text-slate-900 truncate" id="top-bar-dest-title">SLIIT Malabe — Faculty of Computing</div>
+              </div>
+
+              <!-- Right Actions: Filter Sliders & Notification Bell -->
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition" title="Filter & Layers">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/>
+                  </svg>
+                </button>
+                <button onclick="triggerNotificationAlert()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 relative transition" title="Alerts">
+                  <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- 2. Floating Filter Pills (Exact Match to Reference Image) -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
+              <!-- Pill 1: Now - 2h (Black capsule) -->
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black text-white shadow-md cursor-pointer shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span id="pill-duration-text">Now · 2h</span>
+                <span class="text-[10px]">▼</span>
+              </div>
+
+              <!-- Pill 2: Navigate (White capsule with compass arrow) -->
+              <div onclick="centerOnDestination()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-800 shadow-md border border-slate-200 cursor-pointer hover:bg-slate-50 shrink-0">
+                <svg class="w-3.5 h-3.5 text-slate-700 transform rotate-45" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                <span>Navigate</span>
+              </div>
+
+              <!-- Pill 3: QR entry (White capsule with QR icon) -->
+              <div onclick="showQREntryModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-800 shadow-md border border-slate-200 cursor-pointer hover:bg-slate-50 shrink-0">
+                <svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z"/></svg>
+                <span>QR entry</span>
+              </div>
+            </div>
+
+            <!-- Autocomplete Destination Dropdown (Hidden until search tapped) -->
+            <div id="search-card-container" class="hidden bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden divide-y divide-slate-100 fade-in">
+              <div class="p-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer" onclick="selectDestination('sliit')">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">🎓</div>
+                  <div>
+                    <div class="text-xs font-black text-slate-900">SLIIT Malabe Campus (New Kandy Rd)</div>
+                    <div class="text-[11px] text-slate-500">Faculty of Computing & Engineering Smart Lots</div>
+                  </div>
+                </div>
+                <span class="text-slate-400 font-bold text-xs">›</span>
+              </div>
+              <div class="p-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer" onclick="selectDestination('ccc')">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">🏢</div>
+                  <div>
+                    <div class="text-xs font-black text-slate-900">Colombo City Centre (CCC)</div>
+                    <div class="text-[11px] text-slate-500">Sir James Pieris Mawatha, Colombo 02</div>
+                  </div>
+                </div>
+                <span class="text-slate-400 font-bold text-xs">›</span>
+              </div>
+              <div class="p-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer" onclick="selectDestination('hospital')">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">🏥</div>
+                  <div>
+                    <div class="text-xs font-black text-slate-900">Sri Jayewardenepura General Hospital</div>
+                    <div class="text-[11px] text-slate-500">Hospital Road, Sri Jayewardenepura Kotte</div>
+                  </div>
+                </div>
+                <span class="text-slate-400 font-bold text-xs">›</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- REAL-WORLD MAP VIEWPORT WITH ROUTE & PRICE BUBBLES -->
+          <div class="relative flex-1 bg-slate-100 overflow-hidden map-grabbable" id="map-canvas-container">
+            
+            <!-- Real Slippy Map Tile Layer -->
+            <div id="tile-layer" class="absolute inset-0 select-none pointer-events-none"></div>
+
+            <!-- SVG Overlay for Navigation Dotted Route -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-10" id="route-svg">
+              <!-- Dynamic dotted line drawn by JS -->
+              <path id="route-path" d="" fill="none" stroke="#000000" stroke-width="2.5" class="dotted-route" />
+            </svg>
+
+            <!-- Floating Price / Spot Badges (Exact Match to Reference Image) -->
+            <div id="marker-layer" class="absolute inset-0 pointer-events-auto z-20"></div>
+
+            <!-- Right-Hand Map Controls (Recenter & Layers) -->
+            <div class="absolute right-3.5 top-36 z-20 flex flex-col gap-2">
+              <button onclick="centerOnDestination()" class="w-9 h-9 rounded-full bg-white shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-slate-50 transition" title="Re-center Location">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+              </button>
+              <button onclick="toggleMapLayer()" class="w-9 h-9 rounded-full bg-white shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:bg-slate-50 transition" title="Toggle Streets / Satellite">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3"/></svg>
+              </button>
+            </div>
+
+            <!-- Floating Green Chip (Exact Match to Reference: "4 min · 0.6 mi to cheapest") -->
+            <div class="absolute bottom-2 left-6 z-20 pointer-events-none">
+              <div class="px-3 py-1.5 rounded-full bg-white shadow-xl border border-slate-200/90 flex items-center gap-2 text-xs font-black">
+                <div class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px]">
+                  🚗
+                </div>
+                <span class="text-slate-900" id="green-chip-text">4 min · 0.6 km to best match</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- DRAGGABLE BOTTOM SHEET (Exact Match to Reference Image) -->
+          <div class="bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 z-20 flex flex-col max-h-[460px] overflow-hidden" id="bottom-sheet">
+            
+            <!-- Drag Handle -->
+            <div class="py-2 flex justify-center cursor-pointer">
+              <div class="w-10 h-1 bg-slate-300 rounded-full"></div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="px-5 pb-4 overflow-y-auto space-y-3.5">
+              
+              <!-- 1. Header: "How long?" + "High demand · 1.4x" surge badge -->
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-slate-900">How long?</h3>
+                <div class="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-300 flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                  <span class="text-amber-600">⚡</span>
+                  <span>High demand · 1.4x</span>
+                </div>
+              </div>
+
+              <!-- 2. Duration Selector Row: 1h, 2h (selected black), 4h, All day, Calendar -->
+              <div class="grid grid-cols-5 gap-2 text-xs font-black">
+                <button class="duration-btn py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-center hover:border-black" onclick="selectDuration(this, '1h', 1)">1h</button>
+                <button class="duration-btn active py-2.5 rounded-xl bg-black text-white text-center shadow" onclick="selectDuration(this, '2h', 2)">2h</button>
+                <button class="duration-btn py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-center hover:border-black" onclick="selectDuration(this, '4h', 4)">4h</button>
+                <button class="duration-btn py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-center hover:border-black" onclick="selectDuration(this, 'All day', 8)">All day</button>
+                <button class="py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 flex items-center justify-center hover:border-black">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                </button>
+              </div>
+
+              <!-- 3. Time indicator subtitle: Today 2:30 PM - 4:30 PM · Prices update live -->
+              <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Today 2:30 PM – 4:30 PM · Prices update live</span>
+              </div>
+
+              <!-- 4. Spots list header: "6 spots near you" + "Sort: Recommended ▾" -->
+              <div class="flex items-center justify-between text-xs font-bold pt-1">
+                <span class="text-slate-900 font-black">6 spots near you</span>
+                <span class="text-slate-600 flex items-center gap-1 cursor-pointer">
+                  <span>Sort: Recommended</span>
+                  <span class="text-[10px]">▼</span>
+                </span>
+              </div>
+
+              <!-- 5. Parking Lot Cards List (Exact Match to Reference Image) -->
+              <div class="space-y-2.5">
+                
+                <!-- CARD 1: Selected / Best Pick with Solid Black Border -->
+                <div id="lot-card-1" onclick="selectLotCard(1, 'SLIIT FOC Smart Lot', '10.40')" class="p-3.5 rounded-2xl border-2 border-black bg-white shadow-sm cursor-pointer transition">
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-start gap-3">
+                      <!-- Square Parking Icon [P] -->
+                      <div class="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center font-black text-sm shrink-0">
+                        P
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-xs font-black text-slate-900">SLIIT FOC Smart Lot</h4>
+                          <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[10px] font-black uppercase">Cheapest</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-semibold mt-0.5">
+                          <span class="text-amber-500 font-bold">★ 4.8</span> · Covered · EV · 2 min walk
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600 mt-1.5">
+                          <span class="flex items-center gap-1">🚶 Navigate</span>
+                          <span class="flex items-center gap-1">▦ QR entry</span>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Price block -->
+                    <div class="text-right">
+                      <div class="text-base font-black text-slate-900" id="card-1-unit-price">LKR 150.00</div>
+                      <div class="text-[11px] text-slate-400 font-bold" id="card-1-total-price">LKR 300.00 · 2h</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CARD 2: Open Now -->
+                <div id="lot-card-2" onclick="selectLotCard(2, 'Engineering Complex Lot', '240.00')" class="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-black cursor-pointer transition">
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-start gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base shrink-0">
+                        🚗
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-xs font-black text-slate-900">SLIIT Engineering Lot</h4>
+                          <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase">Open now</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-semibold mt-0.5">
+                          <span class="text-amber-500 font-bold">★ 4.5</span> · Outdoor · 4 min walk
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600 mt-1.5">
+                          <span class="flex items-center gap-1">🚶 Navigate</span>
+                          <span class="flex items-center gap-1">▦ QR entry</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-base font-black text-slate-900">LKR 120.00</div>
+                      <div class="text-[11px] text-slate-400 font-bold">LKR 240.00 · 2h</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CARD 3: Surge 1.4x / Almost Full -->
+                <div id="lot-card-3" onclick="selectLotCard(3, 'Main Admin Visitor Tower', '420.00')" class="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-black cursor-pointer transition">
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-start gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base shrink-0">
+                        🏢
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-xs font-black text-slate-900">Admin Visitor Tower</h4>
+                          <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase">Surge 1.4x</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-semibold mt-0.5">
+                          <span class="text-amber-500 font-bold">★ 4.9</span> · Valet · Covered · 6 min walk
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600 mt-1.5">
+                          <span class="flex items-center gap-1">🚶 Navigate</span>
+                          <span class="flex items-center gap-1">▦ QR entry</span>
+                          <span class="text-amber-600 font-black">Almost full</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-base font-black text-slate-900">LKR 210.00</div>
+                      <div class="text-[11px] text-slate-400 font-bold">LKR 420.00 · 2h</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- 6. Big Sticky Action Button -->
+              <div class="pt-2">
+                <button id="main-book-btn" onclick="triggerBookingFlow()" class="w-full py-4 rounded-2xl bg-black hover:bg-slate-800 text-white font-black text-sm tracking-wide shadow-xl flex items-center justify-center gap-2 transition">
+                  <span>Book SLIIT FOC Smart Lot · LKR 300.00</span>
+                </button>
+                <div class="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-bold mt-2">
+                  <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                  <span>Free cancellation · 15 min grace TTL</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- BOTTOM 4-TAB NAVIGATION BAR (Exact Match to Reference Image) -->
+          <div class="bg-white border-t border-slate-200 px-6 py-2 flex items-center justify-between text-xs z-30 select-none">
+            
+            <!-- Tab 1: Explore (Active with black map icon) -->
+            <button class="nav-tab flex flex-col items-center justify-center text-black font-black" onclick="switchMainTab(0)">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+              <span class="text-[11px] mt-0.5">Explore</span>
+            </button>
+
+            <!-- Tab 2: Bookings (Ticket icon) -->
+            <button class="nav-tab flex flex-col items-center justify-center text-slate-400 hover:text-black font-semibold" onclick="switchMainTab(1)">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46 0-1.48-.8-2.77-1.99-3.46L4 6h16v2.54z"/></svg>
+              <span class="text-[11px] mt-0.5">Bookings</span>
+            </button>
+
+            <!-- Tab 3: Saved (Heart icon) -->
+            <button class="nav-tab flex flex-col items-center justify-center text-slate-400 hover:text-black font-semibold" onclick="switchMainTab(2)">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              <span class="text-[11px] mt-0.5">Saved</span>
+            </button>
+
+            <!-- Tab 4: Account (Person icon) -->
+            <button class="nav-tab flex flex-col items-center justify-center text-slate-400 hover:text-black font-semibold" onclick="switchMainTab(3)">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+              <span class="text-[11px] mt-0.5">Account</span>
+            </button>
+
+          </div>
+
+          <!-- Phone Home Indicator Bar -->
+          <div class="bg-white pb-2 pt-1 flex justify-center z-30">
+            <div class="w-32 h-1 bg-slate-300 rounded-full"></div>
+          </div>
+
+          <!-- SETTINGS & REGION MODAL -->
+          <div id="settings-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-40 flex flex-col justify-end fade-in">
+            <div class="bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-5 space-y-4 max-h-[85%] overflow-y-auto">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm">⚙️</span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-900">Map Preferences & Regions</h3>
+                    <p class="text-[11px] text-slate-500">Select evaluation campus or downtown hub</p>
+                  </div>
+                </div>
+                <button onclick="closeSettingsModal()" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">✕</button>
+              </div>
+
+              <div class="space-y-2">
+                <div onclick="selectDestination('sliit')" class="p-3 rounded-2xl border-2 border-black bg-slate-50 cursor-pointer flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-slate-900">🎓 SLIIT Malabe Campus</div>
+                    <div class="text-[11px] text-slate-500">Faculty of Computing & Engineering (New Kandy Rd)</div>
+                  </div>
+                  <span class="text-xs font-black text-emerald-600">Active</span>
+                </div>
+                <div onclick="selectDestination('ccc')" class="p-3 rounded-2xl border border-slate-200 hover:border-black cursor-pointer flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-slate-900">🏙️ Colombo City Centre</div>
+                    <div class="text-[11px] text-slate-500">Sir James Pieris Mawatha, Colombo 02</div>
+                  </div>
+                  <span class="text-xs font-bold text-slate-400">Switch ➔</span>
+                </div>
+                <div onclick="selectDestination('hospital')" class="p-3 rounded-2xl border border-slate-200 hover:border-black cursor-pointer flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-slate-900">🏥 Sri Jayewardenepura Hospital</div>
+                    <div class="text-[11px] text-slate-500">Hospital Road, Kotte</div>
+                  </div>
+                  <span class="text-xs font-bold text-slate-400">Switch ➔</span>
+                </div>
+              </div>
+
+              <!-- Map Layer Toggle -->
+              <div>
+                <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-2">Map Tile Style</label>
+                <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                  <button id="modal-layer-streets" onclick="setMapLayer('streets')" class="p-2.5 rounded-xl border-2 border-black bg-black text-white text-center">
+                    🗺️ Streets
+                  </button>
+                  <button id="modal-layer-satellite" onclick="setMapLayer('satellite')" class="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-center hover:border-black">
+                    🛰️ Satellite
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Controls & Testing Walkthrough (Cols 8-12) -->
+      <div class="lg:col-span-5 space-y-4">
+        
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-black text-white flex items-center justify-center font-black text-xs">UI</span>
+            <h2 class="text-sm font-black text-slate-900">Exact Reference Elements</h2>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Recreated the uploaded screenshot with pixel precision:
+          </p>
+
+          <div class="space-y-2 pt-1 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="font-bold text-slate-900 block">1. Top Search Header</span>
+              <span class="text-slate-500 text-[11px]">Round black search button + two-line subtitle + filter & bell icons.</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="font-bold text-slate-900 block">2. Floating Pills & Dotted Route</span>
+              <span class="text-slate-500 text-[11px]">Dotted vehicle approach polyline + floating price bubbles (LKR 100, LKR 120, LKR 150, etc.).</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="font-bold text-slate-900 block">3. Duration & High Demand Surge</span>
+              <span class="text-slate-500 text-[11px]">"How long?" toggle with `1h`, `2h`, `4h`, `All day`, and `⚡ High demand · 1.4x` tag.</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="font-bold text-slate-900 block">4. Parking Cards & Bottom Bar</span>
+              <span class="text-slate-500 text-[11px]">`[P] Main St Garage`, `Cheapest` badge, walking minutes, and Explore/Bookings/Saved/Account nav.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Research Simulation Actions -->
+        <div class="bg-slate-900 text-white rounded-2xl p-5 space-y-3 shadow-md">
+          <h3 class="text-xs font-black uppercase text-slate-400 tracking-wider">Research Demos (SLIIT Review)</h3>
+          
+          <div class="space-y-2">
+            <button onclick="triggerBookingFlow()" class="w-full text-left p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex justify-between items-center transition">
+              <div>
+                <span class="text-white block font-black">1. Hold Spot (15-Min TTL Countdown)</span>
+                <span class="text-slate-400 text-[11px]">Locks space and activates countdown timer</span>
+              </div>
+              <span>⏱️</span>
+            </button>
+            <button onclick="triggerAIUpgrade()" class="w-full text-left p-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold flex justify-between items-center transition shadow">
+              <div>
+                <span class="text-white block font-black">2. 10-Min Pre-Arrival AI Upgrade</span>
+                <span class="text-indigo-200 text-[11px]">Offers closer slot upgrade without losing hold</span>
+              </div>
+              <span>✨</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Real GIS Coordinates & Locations
+    const locations = {
+      sliit: {
+        title: 'SLIIT Malabe — Faculty of Computing',
+        lat: 6.9147,
+        lon: 79.9733,
+        zoom: 16,
+        spots: [
+          { name: '150', price: 'LKR 150.00', total: '300.00', lat: 6.9142, lon: 79.9729, isPrimary: true },
+          { name: '120', price: 'LKR 120.00', total: '240.00', lat: 6.9135, lon: 79.9745, isHighlight: true },
+          { name: '100', price: 'LKR 100.00', total: '200.00', lat: 6.9152, lon: 79.9738 },
+          { name: '200', price: 'LKR 200.00', total: '400.00', lat: 6.9160, lon: 79.9720 },
+          { name: '250', price: 'LKR 250.00', total: '500.00', lat: 6.9130, lon: 79.9750 }
+        ]
+      },
+      ccc: {
+        title: 'Colombo — Downtown 5th & Main (CCC)',
+        lat: 6.9175,
+        lon: 79.8597,
+        zoom: 16,
+        spots: [
+          { name: '150', price: 'LKR 150.00', total: '300.00', lat: 6.9175, lon: 79.8597, isPrimary: true },
+          { name: '120', price: 'LKR 120.00', total: '240.00', lat: 6.9185, lon: 79.8580, isHighlight: true },
+          { name: '100', price: 'LKR 100.00', total: '200.00', lat: 6.9160, lon: 79.8610 },
+          { name: '200', price: 'LKR 200.00', total: '400.00', lat: 6.9190, lon: 79.8620 },
+          { name: '250', price: 'LKR 250.00', total: '500.00', lat: 6.9150, lon: 79.8570 }
+        ]
+      },
+      hospital: {
+        title: 'Kotte — Sri Jayewardenepura Hospital',
+        lat: 6.8649,
+        lon: 79.9192,
+        zoom: 16,
+        spots: [
+          { name: '120', price: 'LKR 120.00', total: '240.00', lat: 6.8649, lon: 79.9192, isPrimary: true },
+          { name: '100', price: 'LKR 100.00', total: '200.00', lat: 6.8639, lon: 79.9200 },
+          { name: '180', price: 'LKR 180.00', total: '360.00', lat: 6.8660, lon: 79.9180 }
+        ]
+      }
+    };
+
+    let activeKey = 'sliit';
+    let currentCenterLat = locations.sliit.lat;
+    let currentCenterLon = locations.sliit.lon;
+    let currentZoom = 16;
+    let currentLayer = 'streets'; // 'streets' (CartoDB) or 'satellite' (Esri)
+    let selectedLotName = 'SLIIT FOC Smart Lot';
+    let selectedLotPrice = '300.00';
+    let activeHours = 2;
+
+    // Slippy Map Math
+    function lon2tile(lon, zoom) { return ((lon + 180) / 360) * Math.pow(2, zoom); }
+    function lat2tile(lat, zoom) {
+      const rad = (lat * Math.PI) / 180;
+      return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * Math.pow(2, zoom);
+    }
+    function tile2lon(x, zoom) { return (x / Math.pow(2, zoom)) * 360 - 180; }
+    function tile2lat(y, zoom) {
+      const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, zoom);
+      return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    }
+
+    function getTileUrl(x, y, z) {
+      const maxCoord = Math.pow(2, z);
+      const wrappedX = ((x % maxCoord) + maxCoord) % maxCoord;
+      const subdomains = ['a', 'b', 'c', 'd'];
+      const sub = subdomains[Math.abs(wrappedX + y) % subdomains.length];
+
+      if (currentLayer === 'satellite') {
+        return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
+      } else {
+        return `https://${sub}.basemaps.cartocdn.com/light_all/${z}/${wrappedX}/${y}.png`;
+      }
+    }
+
+    function renderMap() {
+      const container = document.getElementById('map-canvas-container');
+      const tileLayer = document.getElementById('tile-layer');
+      const markerLayer = document.getElementById('marker-layer');
+      
+      const width = container.clientWidth || 390;
+      const height = container.clientHeight || 500;
+
+      const centerTileX = lon2tile(currentCenterLon, currentZoom);
+      const centerTileY = lat2tile(currentCenterLat, currentZoom);
+
+      const startTileX = Math.floor(centerTileX - width / 512) - 1;
+      const endTileX = Math.floor(centerTileX + width / 512) + 1;
+      const startTileY = Math.floor(centerTileY - height / 512) - 1;
+      const endTileY = Math.floor(centerTileY + height / 512) + 1;
+
+      // Render Tiles
+      let tilesHtml = '';
+      for (let tx = startTileX; tx <= endTileX; tx++) {
+        for (let ty = startTileY; ty <= endTileY; ty++) {
+          const posX = width / 2 + (tx - centerTileX) * 256;
+          const posY = height / 2 + (ty - centerTileY) * 256;
+          const url = getTileUrl(tx, ty, currentZoom);
+
+          tilesHtml += `
+            <img 
+              src="${url}" 
+              class="absolute tile-img select-none pointer-events-none" 
+              style="left: ${posX}px; top: ${posY}px; width: 256px; height: 256px;" 
+              loading="eager"
+            />
+          `;
+        }
+      }
+      tileLayer.innerHTML = tilesHtml;
+
+      // Render Route & Price Badges (from reference screenshot)
+      let markersHtml = '';
+      const loc = locations[activeKey];
+      let primaryScreenPos = null;
+      let startScreenPos = { x: 70, y: height - 60 }; // user start car pos
+
+      loc.spots.forEach(spot => {
+        const spotTileX = lon2tile(spot.lon, currentZoom);
+        const spotTileY = lat2tile(spot.lat, currentZoom);
+        const posX = width / 2 + (spotTileX - centerTileX) * 256;
+        const posY = height / 2 + (spotTileY - centerTileY) * 256;
+
+        if (spot.isPrimary) {
+          primaryScreenPos = { x: posX, y: posY };
+        }
+
+        // Render circular badge matching screenshot
+        let badgeStyle = 'bg-white text-slate-900 border border-slate-200';
+        if (spot.isPrimary) {
+          badgeStyle = 'bg-black text-white border-2 border-white shadow-xl scale-110';
+        } else if (spot.isHighlight) {
+          badgeStyle = 'bg-amber-100 text-amber-900 border border-amber-300';
+        }
+
+        markersHtml += `
+          <div 
+            onclick="selectLotCard(1, 'SLIIT FOC Smart Lot', '${spot.total}')"
+            class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 hover:scale-125 transition"
+            style="left: ${posX}px; top: ${posY}px;"
+          >
+            <div class="w-8 h-8 rounded-full ${badgeStyle} flex items-center justify-center font-black text-xs shadow-md">
+              ${spot.name}
+            </div>
+            <div class="w-1.5 h-1.5 rounded-full bg-black mx-auto mt-0.5"></div>
+          </div>
+        `;
+      });
+
+      // User Start Dot
+      markersHtml += `
+        <div class="absolute transform -translate-x-1/2 -translate-y-1/2 z-20" style="left: ${startScreenPos.x}px; top: ${startScreenPos.y}px;">
+          <div class="w-5 h-5 rounded-full bg-black border-2 border-white flex items-center justify-center shadow-lg">
+            <div class="w-2 h-2 rounded-full bg-white"></div>
+          </div>
+        </div>
+      `;
+
+      markerLayer.innerHTML = markersHtml;
+
+      // Draw Dotted Curved Navigation Route to primary spot
+      if (primaryScreenPos) {
+        const path = document.getElementById('route-path');
+        const midX = (startScreenPos.x + primaryScreenPos.x) / 2 - 40;
+        const midY = (startScreenPos.y + primaryScreenPos.y) / 2 + 30;
+        path.setAttribute('d', `M ${startScreenPos.x} ${startScreenPos.y} Q ${midX} ${midY} ${primaryScreenPos.x} ${primaryScreenPos.y}`);
+      }
+    }
+
+    // Drag-to-pan handlers
+    const mapBox = document.getElementById('map-canvas-container');
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    mapBox.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+
+      currentCenterLon = tile2lon(lon2tile(currentCenterLon, currentZoom) - dx / 256, currentZoom);
+      currentCenterLat = tile2lat(lat2tile(currentCenterLat, currentZoom) - dy / 256, currentZoom);
+      renderMap();
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Touch support
+    mapBox.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+      }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - dragStartX;
+      const dy = e.touches[0].clientY - dragStartY;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+
+      currentCenterLon = tile2lon(lon2tile(currentCenterLon, currentZoom) - dx / 256, currentZoom);
+      currentCenterLat = tile2lat(lat2tile(currentCenterLat, currentZoom) - dy / 256, currentZoom);
+      renderMap();
+    });
+
+    window.addEventListener('touchend', () => { isDragging = false; });
+
+    // Actions & Toggles
+    function toggleSearchDropdown() {
+      document.getElementById('search-card-container').classList.toggle('hidden');
+    }
+
+    function selectDestination(key) {
+      activeKey = key;
+      const loc = locations[key];
+      document.getElementById('top-bar-dest-title').textContent = loc.title;
+      document.getElementById('search-card-container').classList.add('hidden');
+      closeSettingsModal();
+
+      currentCenterLat = loc.lat;
+      currentCenterLon = loc.lon;
+      currentZoom = loc.zoom;
+      renderMap();
+    }
+
+    function centerOnDestination() {
+      const loc = locations[activeKey];
+      currentCenterLat = loc.lat;
+      currentCenterLon = loc.lon;
+      renderMap();
+    }
+
+    function toggleMapLayer() {
+      currentLayer = currentLayer === 'streets' ? 'satellite' : 'streets';
+      renderMap();
+    }
+
+    function setMapLayer(layer) {
+      currentLayer = layer;
+      closeSettingsModal();
+      renderMap();
+    }
+
+    function selectDuration(btn, label, hours) {
+      document.querySelectorAll('.duration-btn').forEach(b => {
+        b.className = 'duration-btn py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-center hover:border-black';
+      });
+      btn.className = 'duration-btn active py-2.5 rounded-xl bg-black text-white text-center shadow';
+      document.getElementById('pill-duration-text').textContent = `Now · ${label}`;
+      activeHours = hours;
+
+      // Update price calculation in cards
+      const newTotal = (150 * hours).toFixed(2);
+      selectedLotPrice = newTotal;
+      document.getElementById('card-1-total-price').textContent = `LKR ${newTotal} · ${label}`;
+      document.getElementById('main-book-btn').innerHTML = `<span>Book ${selectedLotName} · LKR ${newTotal}</span>`;
+    }
+
+    function selectLotCard(cardNum, name, price) {
+      selectedLotName = name;
+      selectedLotPrice = price;
+
+      for (let i = 1; i <= 3; i++) {
+        const card = document.getElementById(`lot-card-${i}`);
+        if (i === cardNum) {
+          card.className = 'p-3.5 rounded-2xl border-2 border-black bg-white shadow-sm cursor-pointer transition';
+        } else {
+          card.className = 'p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-black cursor-pointer transition';
+        }
+      }
+
+      document.getElementById('main-book-btn').innerHTML = `<span>Book ${name} · LKR ${price}</span>`;
+    }
+
+    function triggerBookingFlow() {
+      alert(`Booking Confirmed for ${selectedLotName} (LKR ${selectedLotPrice})!\n15-Minute Auto-Cancellation Grace Active.\nIoT barrier authorized for entry.`);
+    }
+
+    function triggerAIUpgrade() {
+      alert('AI Dynamic Pre-Arrival Reroute:\nCloser parking bay opened up right next to the entrance!\nTap to switch or keep current spot.');
+    }
+
+    function triggerNotificationAlert() {
+      alert('SPS Alerts:\n• Slot A-02 reserved under 15-min countdown\n• High demand surge 1.4x active due to peak campus hours');
+    }
+
+    function showQREntryModal() {
+      alert('Single-Use Digital Exit QR Pass:\nToken: SPS-EXIT-8849-V4821\nValid for 15 minutes at barrier reader.');
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function switchMainTab(index) {
+      const tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach((t, i) => {
+        t.className = i === index 
+          ? 'nav-tab flex flex-col items-center justify-center text-black font-black' 
+          : 'nav-tab flex flex-col items-center justify-center text-slate-400 hover:text-black font-semibold';
+      });
+    }
+
+    // Auto-init clock
+    function updateClock() {
+      const d = new Date();
+      document.getElementById('clock-display').textContent = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+    setInterval(updateClock, 30000);
+    updateClock();
+
+    setTimeout(renderMap, 100);
+  </script>
+</body>
+</html>
