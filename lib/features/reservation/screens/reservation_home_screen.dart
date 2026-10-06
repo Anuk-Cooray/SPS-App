@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/parking_destination.dart';
 import '../../../core/theme/app_theme.dart';
 import '../services/reservation_service.dart';
+import 'bay_selection_screen.dart';
 
 class ReservationHomeScreen extends StatefulWidget {
   const ReservationHomeScreen({super.key});
@@ -60,16 +61,14 @@ class _ReservationHomeScreenState extends State<ReservationHomeScreen> {
   }
 
   void _bookParking() {
-    _reservationService.bookSlot(
-      slotId: 's-a02',
-      vehicleNumber: 'WP CAA-4821',
-      vehicleType: VehicleType.car,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Booked $_selectedLotName! 15-min cancellation grace period active.'),
-        backgroundColor: AppTheme.availableGreen,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BaySelectionScreen(
+          lotName: _selectedLotName,
+          lotPrice: _selectedLotTotal,
+          duration: _selectedDuration,
+        ),
       ),
     );
   }
